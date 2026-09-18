@@ -335,8 +335,7 @@ export function toolResultSdkContent(content: unknown): ToolResultSdkPart[] | un
   return hasImage ? parts : undefined;
 }
 
-/** Rebuild Send budget. ~30k tokens; Cursor Auto/Composer stall well before Grok's 200k window. */
-export const SDK_PROMPT_MAX_CHARS = 120_000;
+export { SDK_PROMPT_MAX_CHARS, sdkPromptMaxCharsForModel } from "../../core/model-context.js";
 
 export function renderPrompt(
   parsed: ParsedMessages,

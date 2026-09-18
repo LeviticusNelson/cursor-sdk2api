@@ -55,6 +55,7 @@ import { writeResponsesStreamError } from "../protocols/openai-responses/sse.js"
 import { createResponsesWriterFactory } from "../protocols/openai-responses/writer.js";
 import type { SdkRuntime } from "../sdk/port.js";
 import { ModelCatalog } from "../sdk/catalog.js";
+import { contextTokensForModel, sdkPromptMaxCharsForModel } from "../core/model-context.js";
 import { headerValue, readJsonBody, requestPath, sendError, sendJson, sendOpenAIError } from "./http-util.js";
 import { serveConsole } from "./console.js";
 
@@ -585,6 +586,12 @@ export function createApp(input: {
               description: model.description,
               parameters: model.parameters,
               variants: model.variants,
+              context_tokens: contextTokensForModel(model.id, config.modelContextTokens),
+              compact_max_chars: sdkPromptMaxCharsForModel(
+                model.id,
+                config.modelContextTokens,
+                config.compactFillRatio,
+              ),
             })),
             status: listed.status,
             ...(listed.reason ? { reason: listed.reason } : {}),

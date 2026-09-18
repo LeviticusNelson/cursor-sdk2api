@@ -9,7 +9,8 @@ import {
   CompactAnchorStore,
   compactTranscriptDigest,
 } from "../../src/core/compact-anchor.js";
-import { renderPrompt, SDK_PROMPT_MAX_CHARS } from "../../src/protocols/anthropic/parse.js";
+import { renderPrompt } from "../../src/protocols/anthropic/parse.js";
+import { sdkPromptMaxCharsForModel } from "../../src/core/model-context.js";
 import type { ParsedMessages } from "../../src/protocols/anthropic/types.js";
 import { GatewayError } from "../../src/errors.js";
 
@@ -123,10 +124,11 @@ function parsedWithHistory(turns: number, chunk: string): ParsedMessages {
 
 test("rebuild prompt keeps the tail under the SDK send budget", () => {
   const parsed = parsedWithHistory(40, "x".repeat(8_000));
+  const budget = sdkPromptMaxCharsForModel("composer-2.5");
   const full = renderPrompt(parsed);
-  expect(full.text.length).toBeGreaterThan(SDK_PROMPT_MAX_CHARS);
-  const bounded = renderPrompt(parsed, { maxChars: SDK_PROMPT_MAX_CHARS });
-  expect(bounded.text.length).toBeLessThanOrEqual(SDK_PROMPT_MAX_CHARS + 120);
+  expect(full.text.length).toBeGreaterThan(budget);
+  const bounded = renderPrompt(parsed, { maxChars: budget });
+  expect(bounded.text.length).toBeLessThanOrEqual(budget + 120);
   expect(bounded.text).toContain("local compact omitted");
   expect(bounded.text).toContain("turn-39");
   expect(bounded.text).not.toContain("turn-0 ");
