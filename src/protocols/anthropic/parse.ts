@@ -335,9 +335,12 @@ export function toolResultSdkContent(content: unknown): ToolResultSdkPart[] | un
   return hasImage ? parts : undefined;
 }
 
+/** Rebuild Send budget. ~30k tokens; Cursor Auto/Composer stall well before Grok's 200k window. */
+export const SDK_PROMPT_MAX_CHARS = 120_000;
+
 export function renderPrompt(
   parsed: ParsedMessages,
-  options: { includeContinuation?: boolean } = {},
+  options: { includeContinuation?: boolean; maxChars?: number } = {},
 ): { text: string; images: Array<{ data: string; mimeType: string }> } {
   const parts: string[] = [];
   if (parsed.tools.length > 0) {
@@ -374,7 +377,18 @@ export function renderPrompt(
   }
   const directive = toolChoiceDirective(parsed.toolChoice, parsed.tools.length > 0);
   if (directive) parts.push(directive);
-  return { text: parts.join("\n\n") || " ", images: parsed.images };
+  const text = parts.join("\n\n") || " ";
+  const maxChars = options.maxChars;
+  if (!maxChars || text.length <= maxChars) {
+    return { text, images: parsed.images };
+  }
+  const keep = text.slice(-maxChars);
+  const boundary = keep.indexOf("\n\n");
+  const body = boundary > 0 && boundary < 800 ? keep.slice(boundary + 2) : keep;
+  return {
+    text: `[local compact omitted ${text.length - body.length} chars to stay under the SDK send budget]\n\n${body}`,
+    images: parsed.images.slice(-1),
+  };
 }
 
 export function collectImages(messages: AnthropicMessage[]): Array<{ data: string; mimeType: string }> {

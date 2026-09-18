@@ -683,6 +683,7 @@ export function createApp(input: {
             token: minted.token,
             compactId: minted.record.compactId,
             sessionId: sessionHint,
+            inputTokens: estimateAnthropicInputTokens(body, responses.parsed),
           });
           return;
         }
@@ -736,6 +737,7 @@ export function createApp(input: {
           token: minted.token,
           compactId: minted.record.compactId,
           sessionId: sessionHint,
+          inputTokens: estimateAnthropicInputTokens(body, responses.parsed),
         });
         return;
       }

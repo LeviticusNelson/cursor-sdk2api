@@ -15,7 +15,7 @@ import {
 } from "../errors.js";
 import type { Logger } from "../log.js";
 import type { ParsedMessages, ParsedToolResult } from "../protocols/anthropic/types.js";
-import { renderPrompt } from "../protocols/anthropic/parse.js";
+import { renderPrompt, SDK_PROMPT_MAX_CHARS } from "../protocols/anthropic/parse.js";
 import { createAnthropicWriter } from "../protocols/anthropic/writer.js";
 import type { SdkCustomToolResult, SdkRuntime } from "../sdk/port.js";
 import {
@@ -417,13 +417,14 @@ export class RunCoordinator {
     }
 
     const rebuildReason = claim.mode === "rebuild" ? claim.reason : "resume_fallback";
+    const rebuildPrompt = renderPrompt(parsed, { maxChars: SDK_PROMPT_MAX_CHARS });
     this.traceOrdinary({
       action: "rebuild",
       reason: rebuildReason,
       model: parsed.model,
-      send_chars: renderPrompt(parsed).text.length,
+      send_chars: rebuildPrompt.text.length,
     });
-    await this.startTurn(req, res, auth, parsed, requestId, writerFactory, turn);
+    await this.startTurn(req, res, auth, parsed, requestId, writerFactory, turn, rebuildPrompt);
   }
 
   private async resumeOrdinaryAgent(
@@ -590,7 +591,7 @@ export class RunCoordinator {
     session.hostedSearch = parsed.hostedSearch === true;
     if (ordinaryTurn) session.ordinaryReplayOwner = ordinaryTurn;
     try {
-      const prompt = sendOverride ?? renderPrompt(parsed);
+      const prompt = sendOverride ?? renderPrompt(parsed, { maxChars: SDK_PROMPT_MAX_CHARS });
       const pump = await this.startAndBind(
         {
           session,
@@ -647,7 +648,7 @@ export class RunCoordinator {
     session.lastResultDigest = undefined;
     session.replay = undefined;
     session.appliedBoundaryId = undefined;
-    const prompt = options.send ?? renderPrompt(parsed);
+    const prompt = options.send ?? renderPrompt(parsed, { maxChars: SDK_PROMPT_MAX_CHARS });
     try {
       const pump = await this.startAndBind(
         {
